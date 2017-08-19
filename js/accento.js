@@ -128,6 +128,16 @@ function accento_editor( textarea )
 		selection.end_offset = range.endOffset;
 		selection.position = range.getBoundingClientRect();
 		
+		// in case of empty element, try to get position of the parent one
+		if( selection.position.top == 0 )
+		{
+			range.setStartBefore(range.startContainer);
+			range.setEndAfter(range.endContainer);
+			selection.position = range.getBoundingClientRect();
+			range.setStart( selection.start_container, selection.start_offset);
+			range.setEnd( selection.end_container, selection.end_offset);
+		}
+		
 		return selection;
 	}
 	
