@@ -1,0 +1,50 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Accento Editor</title>
+
+	<noscript id="deferred-styles">
+		<link rel="stylesheet" type="text/css" href="css/init.css"/>
+		<link rel="stylesheet" type="text/css" href="css/grid.css"/>
+		<link rel="stylesheet" type="text/css" href="css/style.css"/>
+	</noscript>
+	
+	<script type="text/javascript">
+		var loadDeferredStyles = function() {
+			var addStylesNode = document.getElementById("deferred-styles");
+			var replacement = document.createElement("div");
+			replacement.innerHTML = addStylesNode.textContent;
+			document.body.appendChild(replacement)
+			addStylesNode.parentElement.removeChild(addStylesNode);
+			
+			var elm = document.createElement("script");
+			elm.src = "js/kalamun.js";
+			elm.setAttribute("charset","UTF-8");
+			document.body.appendChild(elm);
+			
+			var elm = document.createElement("script");
+			elm.src = "js/accento.js";
+			elm.setAttribute("charset","UTF-8");
+			document.body.appendChild(elm);
+		};
+
+		var raf = requestAnimationFrame || mozRequestAnimationFrame || webkitRequestAnimationFrame || msRequestAnimationFrame;
+		if (raf) raf(function() { window.setTimeout(loadDeferredStyles, 0); });
+		else window.addEventListener('load', loadDeferredStyles);
+	</script>
+
+</head>
+<body>
+
+<div class="row">
+	<div class="grid w12">
+		<h1>Accento Editor</h1>
+		<p>un editor veloce, modulare e intuitivo</p>
+		<form action="">
+			<textarea name="output" class="accento-editor">Un daino dice a un daino, <em>giochiamo a nascondaino</em>, dai no!</textarea>
+		</form>
+	</div>
+</div>
+
+</body>
+</html>
