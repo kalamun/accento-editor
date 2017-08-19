@@ -69,7 +69,8 @@ function accento_editor( textarea )
 			iframe.contentWindow.addEventListener( 'keydown', on_iframe_keydown, true );
 			iframe.contentWindow.addEventListener( 'keyup', on_iframe_keyup, true );
 			//iframe.contentWindow.addEventListener('mousedown',on_iframe_mousedown,true);
-			iframe.contentWindow.addEventListener('mouseup',on_iframe_mouseup,true);
+			iframe.contentWindow.addEventListener( 'mouseup', on_iframe_mouseup, true);
+			iframe.contentWindow.addEventListener( 'blur', on_iframe_blur, true);
 		}
 
 	}
@@ -102,6 +103,13 @@ function accento_editor( textarea )
 	function on_iframe_mouseup()
 	{
 		show_options();
+	}
+	
+	/* iframe: on mouse down */
+	function on_iframe_blur()
+	{
+		hide_baloon_menu();
+		hide_widget_menu();
 	}
 	
 	/* iframe: add a css style */
@@ -151,8 +159,7 @@ function accento_editor( textarea )
 	/* iframe: show options based on selection */
 	function show_options()
 	{
-		var options = [];
-		show_baloon_menu( options );
+		show_baloon_menu();
 		show_widget_menu();
 	}
 	
@@ -171,9 +178,45 @@ function accento_editor( textarea )
 	}
 	
 	/* baloon */
-	function show_baloon_menu( options )
+	function show_baloon_menu()
 	{
+		if( !baloon_menu )
+		{
+			baloon_menu = document.createElement( 'div' );
+			baloon_menu.className = 'baloon-menu';
+			container.appendChild( baloon_menu );
+		}
+
+		var selection = get_selection();
+		var top = 0,
+			left = 0;
 		
+		// if something selected, show text options
+		if( selection.start_container != selection.end_container || selection.start_offset != selection.end_offset )
+		{
+			top = selection.position.top;
+			left = selection.position.left + selection.position.width / 2;
+			
+		// or if parent node is one of these: em, i, strong, b, u, blockquote, h\d, a, ul, ol, li, show options for that element
+//		} else if() {
+			
+		// else do nothing
+		} else {
+			hide_baloon_menu();
+			return false;
+		}
+		
+		baloon_menu.style.top = top + 'px';
+		baloon_menu.style.left = left + 'px';
+		baloon_menu.className = baloon_menu.className.replace( ' hidden', '' );
+	}
+	
+	function hide_baloon_menu()
+	{
+		if( !baloon_menu ) return true;
+		
+		baloon_menu.className = baloon_menu.className.replace( ' hidden', '' );
+		baloon_menu.className += ' hidden';
 	}
 	
 	/* widgets */
@@ -187,7 +230,16 @@ function accento_editor( textarea )
 		}
 		
 		var selection = get_selection();
-		console.log( selection );
+
 		widget_menu.style.top = selection.position.top + selection.position.height / 2;
 	}
+	
+	function hide_widget_menu()
+	{
+		if( !widget_menu ) return true;
+		
+		widget_menu.parentNode.removeChild( widget_menu );
+		widget_menu = null;
+	}
+	
 }

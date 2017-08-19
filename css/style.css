@@ -17,6 +17,19 @@
 	resize: none;
 }
 
+.accento-container .baloon-menu {
+	position:absolute;
+	z-index:105;
+	padding:3px;
+	height:30px;
+	transform:translateY(-100%);
+	background-color:#222;
+	border-radius:3px;
+}
+.accento-container .baloon-menu.hidden {
+	display:none;
+}
+
 .accento-container .widget-menu {
 	position:absolute;
 	z-index:100;
