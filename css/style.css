@@ -1,3 +1,6 @@
+.accento-container {
+	position:relative;
+}
 .accento-container textarea,
 .accento-container iframe {
 	border:1px solid #eee;
@@ -7,9 +10,22 @@
 }
 
 .accento-container textarea {
-/*	display:none;*/
+	display:none;
 	padding:20px;
 	color:#eee;
 	background-color:#222;
 	resize: none;
+}
+
+.accento-container .widget-menu {
+	position:absolute;
+	z-index:100;
+	width:30px;
+	height:30px;
+	transform:translateY(-50%);
+	background-color:#fff;
+	border:1px solid #ccc;
+	border-radius:50%;
+	left:-25px;
+	transition:top .1s;
 }

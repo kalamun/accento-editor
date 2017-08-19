@@ -18,7 +18,9 @@ function accento_editor( textarea )
 	// textarea is already defined
 	var container = null, // div that contains both iframe and textarea
 		iframe = null, // reference to iframe
-		idocument = null; // reference to iframe document
+		idocument = null, // reference to iframe document
+		widget_menu = null, // reference to widget lateral menu
+		baloon_menu = null; // reference to baloon over-text menu
 	
 	function init()
 	{
@@ -66,7 +68,8 @@ function accento_editor( textarea )
 			//iframe.contentWindow.addEventListener('focus',kOnFocus,true);
 			iframe.contentWindow.addEventListener( 'keydown', on_iframe_keydown, true );
 			iframe.contentWindow.addEventListener( 'keyup', on_iframe_keyup, true );
-			iframe.contentWindow.addEventListener('mousedown',on_iframe_mousedown,true);
+			//iframe.contentWindow.addEventListener('mousedown',on_iframe_mousedown,true);
+			iframe.contentWindow.addEventListener('mouseup',on_iframe_mouseup,true);
 		}
 
 	}
@@ -93,7 +96,12 @@ function accento_editor( textarea )
 	/* iframe: on mouse down */
 	function on_iframe_mousedown()
 	{
-		
+	}
+	
+	/* iframe: on mouse up */
+	function on_iframe_mouseup()
+	{
+		show_options();
 	}
 	
 	/* iframe: add a css style */
@@ -107,6 +115,22 @@ function accento_editor( textarea )
 		idocument.head.appendChild( style );
 	}
 	
+	/* iframe: get cursor / selection position and size */
+	function get_selection()
+	{
+		var sel = iframe.contentWindow.getSelection();
+		var range = sel.getRangeAt(0);
+		
+		var selection = {};
+		selection.start_container = range.startContainer,
+		selection.start_offset = range.startOffset,
+		selection.end_container = range.endContainer,
+		selection.end_offset = range.endOffset;
+		selection.position = range.getBoundingClientRect();
+		
+		return selection;
+	}
+	
 	/* iframe: resize iframe to contents */
 	function resize_to_fit_content()
 	{
@@ -118,7 +142,8 @@ function accento_editor( textarea )
 	function show_options()
 	{
 		var options = [];
-		show_baloon( options );
+		show_baloon_menu( options );
+		show_widget_menu();
 	}
 	
 	/* sync iframe to textarea */
@@ -136,8 +161,23 @@ function accento_editor( textarea )
 	}
 	
 	/* baloon */
-	function show_baloon( options )
+	function show_baloon_menu( options )
 	{
 		
+	}
+	
+	/* widgets */
+	function show_widget_menu()
+	{
+		if( !widget_menu )
+		{
+			widget_menu = document.createElement( 'div' );
+			widget_menu.className = 'widget-menu';
+			container.appendChild( widget_menu );
+		}
+		
+		var selection = get_selection();
+		console.log( selection );
+		widget_menu.style.top = selection.position.top + selection.position.height / 2;
 	}
 }
