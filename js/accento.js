@@ -82,8 +82,33 @@ function accento_editor( textarea )
 	}
 	
 	/* iframe: on keydown*/
-	function on_iframe_keydown()
+	function on_iframe_keydown( e )
 	{
+		// transform quotes into l and r quotes
+		if( "'" == e.key || '"' == e.key ) e.preventDefault();
+		else return true;
+		
+		var sel = iframe.contentWindow.getSelection();
+		var range = sel.getRangeAt(0);
+		var last_char = range.endContainer.textContent.substring( range.endContainer.textContent.length - 1 );
+		var match = last_char.match( /[^\s]/ );
+
+		if( "'" == e.key )
+		{
+			if( match && match[0] )
+				var key = idocument.createTextNode( "’" );
+			else
+				var key = idocument.createTextNode( "‘" );
+			
+		} else if( '"' == e.key ) {
+			if( match && match[0] )
+				var key = idocument.createTextNode( "”" );
+			else
+				var key = idocument.createTextNode( "“" );
+		}
+		
+		range.insertNode( key );
+		range.setStartAfter( key );
 	}
 	
 	/* iframe: on keyup*/
