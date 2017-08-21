@@ -21,7 +21,8 @@ function accento_editor( textarea )
 		idocument = null, // reference to iframe document
 		widget_menu = null, // reference to widget lateral menu
 		baloon_menu = null, // reference to baloon over-text menu
-		highlight = null; // reference to the div that highlights parent elements on null selections
+		highlight = null, // reference to the div that highlights parent elements on null selections
+		saved_selection = null; // selection in memory
 	
 	function init()
 	{
@@ -85,31 +86,19 @@ function accento_editor( textarea )
 	/* iframe: on keydown*/
 	function on_iframe_keydown( e )
 	{
-		// transform quotes into l and r quotes
-		if( "'" == e.key || '"' == e.key ) e.preventDefault();
-		else return true;
+		adjust_quotes( e );
 		
-		var sel = iframe.contentWindow.getSelection();
-		var range = sel.getRangeAt(0);
-		var last_char = range.endContainer.textContent.substring( range.endContainer.textContent.length - 1 );
-		var match = last_char.match( /[^\s]/ );
-
-		if( "'" == e.key )
+		if( e.ctrlKey && e.key == "b" )
 		{
-			if( match && match[0] )
-				var key = idocument.createTextNode( "’" );
-			else
-				var key = idocument.createTextNode( "‘" );
-			
-		} else if( '"' == e.key ) {
-			if( match && match[0] )
-				var key = idocument.createTextNode( "”" );
-			else
-				var key = idocument.createTextNode( "“" );
+			e.preventDefault();
+			set_bold();
+		} else if( e.ctrlKey && e.key == "i" ) {
+			e.preventDefault();
+			set_italic();
+		} else if( e.ctrlKey && e.key == "u" ) {
+			e.preventDefault();
+			set_underline();
 		}
-		
-		range.insertNode( key );
-		range.setStartAfter( key );
 	}
 	
 	/* iframe: on keyup*/
@@ -138,6 +127,67 @@ function accento_editor( textarea )
 		hide_baloon_menu();
 		hide_highlight();
 	}
+
+	// transform quotes into l and r quotes
+	function adjust_quotes( e )
+	{
+		if( "'" == e.key || '"' == e.key ) e.preventDefault();
+		else return true;
+		
+		var sel = iframe.contentWindow.getSelection();
+		var range = sel.getRangeAt(0);
+		var last_char = range.endContainer.textContent.substring( range.endContainer.textContent.length - 1 );
+		var match = last_char.match( /[^\s]/ );
+
+		if( "'" == e.key )
+		{
+			if( match && match[0] )
+				var key = idocument.createTextNode( "’" );
+			else
+				var key = idocument.createTextNode( "‘" );
+			
+		} else if( '"' == e.key ) {
+			if( match && match[0] )
+				var key = idocument.createTextNode( "”" );
+			else
+				var key = idocument.createTextNode( "“" );
+		}
+		
+		range.insertNode( key );
+		range.setStartAfter( key );
+	}
+
+	/* iframe: set bold */
+	function set_bold()
+	{
+		save_selection();
+		idocument.execCommand("bold", false, false);
+		idocument.body.innerHTML = idocument.body.innerHTML.replace( /<(\/)?b>/, "<$1strong>" );
+		recover_selection();
+		show_baloon_menu();
+		iframe.contentWindow.focus();
+	}
+
+	/* iframe: set italic */
+	function set_italic()
+	{
+		save_selection();
+		idocument.execCommand("italic", false, false);
+		recover_selection();
+		show_baloon_menu();
+		iframe.contentWindow.focus();
+	}
+
+	/* iframe: set italic */
+	function set_underline()
+	{
+		save_selection();
+		idocument.execCommand("underline", false, false);
+		recover_selection();
+		show_baloon_menu();
+		iframe.contentWindow.focus();
+	}
+
 	
 	/* iframe: add a css style */
 	function add_style( url )
@@ -168,17 +218,35 @@ function accento_editor( textarea )
 		// in case of empty element, try to get position of the parent one
 		if( selection.position.top == 0 )
 		{
-			range.setStartBefore(range.startContainer);
-			range.setEndAfter(range.endContainer);
+			range.setStartBefore( range.startContainer );
+			range.setEndAfter( range.endContainer );
 			
 			selection.position = range.getBoundingClientRect();
 			selection.parent_node = range.commonAncestorContainer;
 			
-			range.setStart( selection.start_container, selection.start_offset);
-			range.setEnd( selection.end_container, selection.end_offset);
+			range.setStart( selection.start_container, selection.start_offset );
+			range.setEnd( selection.end_container, selection.end_offset );
 		}
 		
 		return selection;
+	}
+	
+	/* memorize current selection */
+	function save_selection( selection )
+	{
+		if( !selection ) var selection = get_selection();
+		saved_selection = selection;
+	}
+	
+	/* recover previously memorized selection */
+	function recover_selection( selection )
+	{
+		if( !selection ) var selection = saved_selection;
+		
+		var sel = iframe.contentWindow.getSelection();
+		var range = sel.getRangeAt(0);
+		range.setStart( selection.start_container, selection.start_offset );
+		range.setEnd( selection.end_container, selection.end_offset );
 	}
 	
 	/* iframe: resize iframe to contents */
@@ -234,7 +302,7 @@ function accento_editor( textarea )
 		{
 			baloon_menu = document.createElement( 'div' );
 			baloon_menu.className = 'baloon-menu';
-			baloon_menu.innerHTML = "<strong>b</strong><em>i</em><u>u</u>";
+			baloon_menu.innerHTML = "<strong></strong><em></em><u></u>";
 			container.appendChild( baloon_menu );
 		}
 
@@ -260,9 +328,28 @@ function accento_editor( textarea )
 			top = selection.position.top;
 			left = selection.position.left + selection.position.width / 2;
 			hide_highlight();
+			show_baloon_buttons();
+			activate_baloon_buttons( parents );
 			
 		// or if parent node is one of these: em, i, strong, b, u, blockquote, h\d, a, ul, ol, li, show options for that element
-		} else if( parents.indexOf("EM") >= 0 ) {
+		} else if(
+			parents.indexOf("EM") >= 0
+			|| parents.indexOf("I") >= 0
+			|| parents.indexOf("STRONG") >= 0
+			|| parents.indexOf("B") >= 0
+			|| parents.indexOf("U") >= 0
+			|| parents.indexOf("BLOCKQUOTE") >= 0
+			|| parents.indexOf("H1") >= 0
+			|| parents.indexOf("H2") >= 0
+			|| parents.indexOf("H3") >= 0
+			|| parents.indexOf("H4") >= 0
+			|| parents.indexOf("H5") >= 0
+			|| parents.indexOf("H6") >= 0
+			|| parents.indexOf("A") >= 0
+			|| parents.indexOf("UL") >= 0
+			|| parents.indexOf("OL") >= 0
+			|| parents.indexOf("LI") >= 0
+			) {
 			var sel = iframe.contentWindow.getSelection();
 			var range = sel.getRangeAt(0);
 			
@@ -278,6 +365,9 @@ function accento_editor( textarea )
 
 			range.setStart( selection.start_container, selection.start_offset);
 			range.setEnd( selection.end_container, selection.end_offset);
+
+			show_baloon_buttons( parents );
+			activate_baloon_buttons( parents );
 			
 		// else do nothing
 		} else {
@@ -311,6 +401,26 @@ function accento_editor( textarea )
 		
 		highlight.className = highlight.className.replace( ' hidden', '' );
 		highlight.className += ' hidden';
+	}
+	
+	/* baloon: show/hide buttons: input is an array of tagNames */
+	function show_baloon_buttons( buttons )
+	{
+		for( var i=0, c=baloon_menu.childNodes; c[i]; i++ )
+		{
+			if( !buttons || buttons.indexOf( c[i].tagName ) > -1 ) c[i].className = '';
+			else c[i].className = 'hidden';
+		}
+	}
+	
+	/* baloon: set active/inactive buttons */
+	function activate_baloon_buttons( buttons )
+	{
+		for( var i=0, c=baloon_menu.childNodes; c[i]; i++ )
+		{
+			if( !buttons || buttons.indexOf( c[i].tagName ) > -1 ) c[i].className = 'active';
+			else c[i].className = c[i].className.replace( "active", "" );
+		}
 	}
 	
 	/* widgets */
