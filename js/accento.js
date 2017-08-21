@@ -20,7 +20,8 @@ function accento_editor( textarea )
 		iframe = null, // reference to iframe
 		idocument = null, // reference to iframe document
 		widget_menu = null, // reference to widget lateral menu
-		baloon_menu = null; // reference to baloon over-text menu
+		baloon_menu = null, // reference to baloon over-text menu
+		highlight = null; // reference to the div that highlights parent elements on null selections
 	
 	function init()
 	{
@@ -133,8 +134,9 @@ function accento_editor( textarea )
 	/* iframe: on mouse down */
 	function on_iframe_blur()
 	{
-		hide_baloon_menu();
 		hide_widget_menu();
+		hide_baloon_menu();
+		hide_highlight();
 	}
 	
 	/* iframe: add a css style */
@@ -151,22 +153,27 @@ function accento_editor( textarea )
 	/* iframe: get cursor / selection position and size */
 	function get_selection()
 	{
+		var selection = {};
+		
 		var sel = iframe.contentWindow.getSelection();
 		var range = sel.getRangeAt(0);
 		
-		var selection = {};
 		selection.start_container = range.startContainer,
 		selection.start_offset = range.startOffset,
 		selection.end_container = range.endContainer,
 		selection.end_offset = range.endOffset;
 		selection.position = range.getBoundingClientRect();
+		selection.parent_node = range.commonAncestorContainer;
 		
 		// in case of empty element, try to get position of the parent one
 		if( selection.position.top == 0 )
 		{
 			range.setStartBefore(range.startContainer);
 			range.setEndAfter(range.endContainer);
+			
 			selection.position = range.getBoundingClientRect();
+			selection.parent_node = range.commonAncestorContainer;
+			
 			range.setStart( selection.start_container, selection.start_offset);
 			range.setEnd( selection.end_container, selection.end_offset);
 		}
@@ -179,6 +186,24 @@ function accento_editor( textarea )
 	{
 		iframe.style.height = idocument.body.scrollHeight + 'px';
 		textarea.style.height = iframe.style.height;
+	}
+	
+	/* iframe: get selection parent nodes, as objects or as tagNames */
+	function get_parents( output )
+	{
+		if( !output ) var output = "object";
+		
+		var parents = [];
+		var selection = get_selection();
+		while( selection.parent_node.parentNode && selection.parent_node.parentNode.tagName != "BODY" )
+		{
+			selection.parent_node = selection.parent_node.parentNode;
+			if( "object" == output )
+				parents.push( selection.parent_node );
+			else if( "tagName" == output )
+				parents.push( selection.parent_node.tagName );
+		}
+		return parents;
 	}
 	
 	/* iframe: show options based on selection */
@@ -209,31 +234,67 @@ function accento_editor( textarea )
 		{
 			baloon_menu = document.createElement( 'div' );
 			baloon_menu.className = 'baloon-menu';
+			baloon_menu.innerHTML = "<strong>b</strong><em>i</em><u>u</u>";
 			container.appendChild( baloon_menu );
+		}
+
+		if( !highlight )
+		{
+			highlight = document.createElement( 'div' );
+			highlight.className = 'highlight';
+			container.appendChild( highlight );
 		}
 
 		var selection = get_selection();
 		var top = 0,
-			left = 0;
+			left = 0,
+			highlight_top = 0,
+			highlight_left = 0,
+			highlight_width = 0,
+			highlight_height = 0;
+		var parents = get_parents( "tagName" );
 		
 		// if something selected, show text options
 		if( selection.start_container != selection.end_container || selection.start_offset != selection.end_offset )
 		{
 			top = selection.position.top;
 			left = selection.position.left + selection.position.width / 2;
+			hide_highlight();
 			
 		// or if parent node is one of these: em, i, strong, b, u, blockquote, h\d, a, ul, ol, li, show options for that element
-//		} else if() {
+		} else if( parents.indexOf("EM") >= 0 ) {
+			var sel = iframe.contentWindow.getSelection();
+			var range = sel.getRangeAt(0);
+			
+			range.setStartBefore(selection.start_container);
+			range.setEndAfter(selection.end_container);
+
+			top = range.getBoundingClientRect().top;
+			left = range.getBoundingClientRect().left + range.getBoundingClientRect().width / 2;
+			highlight_top = top;
+			highlight_left = range.getBoundingClientRect().left;
+			highlight_width = range.getBoundingClientRect().width;
+			highlight_height = range.getBoundingClientRect().height;
+
+			range.setStart( selection.start_container, selection.start_offset);
+			range.setEnd( selection.end_container, selection.end_offset);
 			
 		// else do nothing
 		} else {
 			hide_baloon_menu();
+			hide_highlight();
 			return false;
 		}
 		
 		baloon_menu.style.top = top + 'px';
 		baloon_menu.style.left = left + 'px';
 		baloon_menu.className = baloon_menu.className.replace( ' hidden', '' );
+		
+		highlight.style.top = highlight_top + 'px';
+		highlight.style.left = highlight_left + 'px';
+		highlight.style.width = highlight_width + 'px';
+		highlight.style.height = highlight_height + 'px';
+		highlight.className = highlight.className.replace( ' hidden', '' );
 	}
 	
 	function hide_baloon_menu()
@@ -242,6 +303,14 @@ function accento_editor( textarea )
 		
 		baloon_menu.className = baloon_menu.className.replace( ' hidden', '' );
 		baloon_menu.className += ' hidden';
+	}
+	
+	function hide_highlight()
+	{
+		if( !highlight ) return true;
+		
+		highlight.className = highlight.className.replace( ' hidden', '' );
+		highlight.className += ' hidden';
 	}
 	
 	/* widgets */
